@@ -56,7 +56,7 @@ git push -u origin main
 | `NEXT_PUBLIC_SUPABASE_URL` | `https://gvxtzvcxjodpyvaxiqqn.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | sua chave |
 | `AUTH_SECRET` | mesmo do `.env` local |
-| `AUTH_URL` | `https://uniao-theta.vercel.app` (ou URL do projeto) |
+| `AUTH_URL` | `https://uniao-pied.vercel.app` (ou URL do projeto) |
 | `AUTH_TRUST_HOST` | `true` |
 
 5. **Deploy**
@@ -71,7 +71,7 @@ git push -u origin main
 
 ## URL atual (CLI)
 
-Se já fez deploy pela CLI antes: **https://uniao-theta.vercel.app**
+Produção atual: **https://uniao-pied.vercel.app**
 
 ---
 

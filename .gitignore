@@ -36,8 +36,6 @@ yarn-error.log*
 .env.supabase
 
 # vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -50,5 +48,3 @@ next-env.d.ts
 !/public/uploads/company/.gitkeep
 !/public/uploads/users/
 !/public/uploads/users/.gitkeep
-
-.vercel

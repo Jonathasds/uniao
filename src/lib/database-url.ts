@@ -133,10 +133,10 @@ export function resolvePrismaDatasourceUrls(
     : resolved;
 
   if (process.env.VERCEL === "1" && isSupabaseDatabaseUrl(resolved)) {
-    // Mantém DATABASE_URL; pooler Supavisor (6543) se a URL for direta :5432
+    // URL direta :5432 não funciona na Vercel (IPv6); session pooler :5432 é o padrão do projeto
     runtimeUrl =
       resolved.includes("db.") && !resolved.includes(".pooler.")
-        ? toSupabaseVercelPoolerUrl(resolved)
+        ? toSupabaseSessionPoolerUrl(resolved)
         : normalizeSupabaseUrl(resolved);
   } else {
     const directFromEnvEarly = env.DIRECT_DATABASE_URL?.trim();
@@ -186,9 +186,46 @@ export function isSupabaseConfigured(): boolean {
   return isSupabaseDatabaseUrl(resolvePostgresUrl(url) ?? url);
 }
 
+/** Host do session pooler Supabase (região sa-east-1 do projeto). */
+const SUPABASE_SESSION_POOLER_HOST = "aws-0-sa-east-1.pooler.supabase.com";
+
 /**
- * Converte URL direta Supabase em pooler Supavisor (IPv4, compatível com Vercel).
- * Formato: postgres.[ref] @ db.[ref].supabase.co:6543
+ * Converte URL direta Supabase em session pooler (porta 5432, compatível com Prisma na Vercel).
+ * @param databaseUrl - URL direta ou pooler.
+ * @returns URL do session pooler regional.
+ */
+export function toSupabaseSessionPoolerUrl(databaseUrl: string): string {
+  const resolved = resolvePostgresUrl(databaseUrl) ?? databaseUrl;
+
+  try {
+    const url = new URL(resolved);
+    const password = url.password ? decodeURIComponent(url.password) : "";
+    let projectRef = "";
+
+    if (url.hostname.startsWith("db.")) {
+      projectRef = url.hostname.slice(3).replace(".supabase.co", "");
+    } else if (url.username.startsWith("postgres.")) {
+      projectRef = url.username.slice("postgres.".length);
+    }
+
+    if (!projectRef || !password) return normalizeSupabaseUrl(resolved);
+
+    if (url.hostname.includes(".pooler.") && url.port === "5432") {
+      return normalizeSupabaseUrl(resolved);
+    }
+
+    const pooler = new URL(
+      `postgresql://postgres.${projectRef}:${encodeURIComponent(password)}@${SUPABASE_SESSION_POOLER_HOST}:5432/postgres`
+    );
+    return normalizeSupabaseUrl(pooler.toString());
+  } catch {
+    return normalizeSupabaseUrl(resolved);
+  }
+}
+
+/**
+ * Converte URL direta Supabase em pooler Supavisor transaction mode (6543).
+ * Preferir {@link toSupabaseSessionPoolerUrl} — o 6543 costuma falhar com Prisma neste projeto.
  * @param databaseUrl - URL direta ou pooler.
  * @returns URL do pooler transaction mode.
  */
