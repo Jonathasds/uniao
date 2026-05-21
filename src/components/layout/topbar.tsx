@@ -133,13 +133,13 @@ export function Topbar({ userImage, userName, onMenuClick }: TopbarProps) {
         />
 
         <DropdownMenu.Root>
-          <div className="flex items-center gap-1 rounded-lg hover:bg-slate-50">
+          <div className="flex max-w-[11rem] items-center gap-1.5 rounded-lg sm:max-w-none sm:gap-2 sm:hover:bg-slate-50">
             <button
               type="button"
               onClick={handleAvatarClick}
               disabled={pending}
               title="Clique para alterar sua foto"
-              className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60"
+              className="group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60 sm:h-10 sm:w-10"
             >
               {avatarPreview ? (
                 <Image
@@ -161,13 +161,16 @@ export function Topbar({ userImage, userName, onMenuClick }: TopbarProps) {
             <DropdownMenu.Trigger asChild>
               <button
                 type="button"
-                className="hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 outline-none sm:flex"
+                className="flex min-w-0 flex-1 items-center rounded-lg px-1 py-1.5 text-left outline-none sm:px-2"
+                aria-label={`Menu da conta: ${displayName}, ${displayRole}`}
               >
-                <div className="min-w-0 text-left">
-                  <p className="max-w-[8rem] truncate text-sm font-medium text-slate-900 sm:max-w-[10rem]">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium leading-tight text-slate-900">
                     {displayName}
                   </p>
-                  <p className="truncate text-xs text-slate-500">{displayRole}</p>
+                  <p className="truncate text-xs leading-tight text-slate-500">
+                    {displayRole}
+                  </p>
                 </div>
               </button>
             </DropdownMenu.Trigger>
