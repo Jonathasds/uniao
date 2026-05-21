@@ -147,12 +147,19 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 
 2. No Supabase: **Project Settings → Database** → copie **Session pooler** (porta 5432) ou ative **IPv4** e use **Direct connection**.
 
-3. **Segurança (Vercel):** não use `NEXT_PUBLIC_*` para URLs/senhas do Postgres. Use só variáveis server-side: `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `DATABASE_URL`. Remova variáveis criadas pela integração com prefixo errado:
+3. **Segurança (Vercel):** não use `NEXT_PUBLIC_*` para URLs/senhas do Postgres (ficam visíveis no browser). Use só variáveis **server-side**:
+   - `POSTGRES_PRISMA_URL` — copie em [Dashboard → Connect → ORMs → Prisma](https://supabase.com/dashboard/project/gvxtzvcxjodpyvaxiqqn/settings/database) (Transaction pooler, porta **6543**)
+   - `POSTGRES_URL_NON_POOLING` — Direct connection (porta **5432**), só para `prisma db push` local
+   - `DATABASE_URL` — mesma URL que `POSTGRES_PRISMA_URL`
+   - Mantenha: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `AUTH_*`
+
+   Remova variáveis antigas da integração com prefixo errado:
    ```powershell
-   .\scripts\sync-vercel-db-env.ps1
    .\scripts\cleanup-vercel-env.ps1
    npx vercel --prod
    ```
+
+   Se o login parar após a limpeza, cole a **URI exata** do painel Supabase em `POSTGRES_PRISMA_URL` na Vercel (não invente a URL manualmente).
 
 4. Se `/api/health/db` retornar **503** na Vercel:
    - Erro `Can't reach database server at db....supabase.co` → ative **IPv4** no Supabase; depois defina `USE_DIRECT_DATABASE_ON_VERCEL=1` e `DIRECT_DATABASE_URL` (Direct).
