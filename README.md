@@ -103,6 +103,10 @@ prisma/
 └── seed.ts
 ```
 
+## GitHub + Vercel
+
+Guia passo a passo: **[docs/GITHUB-VERCEL.md](docs/GITHUB-VERCEL.md)**
+
 ## Deploy na Vercel
 
 Guia completo: **[docs/DEPLOY-VERCEL.md](docs/DEPLOY-VERCEL.md)**
