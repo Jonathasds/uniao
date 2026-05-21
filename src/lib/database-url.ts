@@ -108,6 +108,72 @@ export function deriveSupabaseDirectUrl(poolerUrl: string): string | undefined {
   }
 }
 
+/** Chaves que a integração Supabase↔Vercel pode injetar (às vezes com prefixo incorreto). */
+const SUPABASE_INTEGRATION_DATABASE_KEYS = [
+  "DATABASE_URL",
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
+] as const;
+
+/** Na Vercel, prioriza URLs geradas pela integração Supabase (formato correto do painel). */
+const SUPABASE_VERCEL_DATABASE_KEYS = [
+  "POSTGRES_PRISMA_URL",
+  "POSTGRES_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
+  "DATABASE_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
+] as const;
+
+const SUPABASE_INTEGRATION_DIRECT_KEYS = [
+  "DIRECT_DATABASE_URL",
+  "POSTGRES_URL_NON_POOLING",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
+] as const;
+
+/**
+ * Retorna o primeiro valor não vazio entre várias chaves de ambiente.
+ * @param env - Variáveis de ambiente.
+ * @param keys - Chaves em ordem de prioridade.
+ * @returns Valor encontrado ou string vazia.
+ */
+function pickFirstEnv(env: NodeJS.ProcessEnv, keys: readonly string[]): string {
+  for (const key of keys) {
+    const value = env[key]?.trim();
+    if (value) return value;
+  }
+  return "";
+}
+
+/**
+ * Aplica `SUPABASE_DB_PASSWORD` na URL quando definida.
+ * @param url - Connection string.
+ * @param env - Variáveis de ambiente.
+ * @returns URL com senha injetada.
+ */
+function withOptionalSupabasePassword(
+  url: string,
+  env: NodeJS.ProcessEnv
+): string {
+  const plainPassword = env.SUPABASE_DB_PASSWORD?.trim();
+  if (!plainPassword || !url || !isSupabaseDatabaseUrl(url)) return url;
+
+  try {
+    const parsed = new URL(resolvePostgresUrl(url) ?? url);
+    // Integração Supabase↔Vercel já traz senha na URL — não sobrescrever
+    if (parsed.password) return url;
+  } catch {
+    return url;
+  }
+
+  return injectSupabasePassword(url, plainPassword);
+}
+
 /**
  * Substitui a senha na URL quando `SUPABASE_DB_PASSWORD` está definida (evita erro de encoding na Vercel).
  * @param databaseUrl - URL com ou sem senha.
@@ -136,14 +202,10 @@ export function resolvePrismaDatasourceUrls(
   env: NodeJS.ProcessEnv = process.env
 ): PrismaDatasourceUrls {
   let raw =
-    env.DATABASE_URL?.trim() ||
-    env.DIRECT_DATABASE_URL?.trim() ||
-    "";
+    pickFirstEnv(env, SUPABASE_INTEGRATION_DATABASE_KEYS) ||
+    pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS);
 
-  const plainPassword = env.SUPABASE_DB_PASSWORD?.trim();
-  if (plainPassword && raw && isSupabaseDatabaseUrl(raw)) {
-    raw = injectSupabasePassword(raw, plainPassword);
-  }
+  raw = withOptionalSupabasePassword(raw, env);
 
   if (!raw) {
     throw new Error(
@@ -157,15 +219,35 @@ export function resolvePrismaDatasourceUrls(
     : resolved;
 
   if (process.env.VERCEL === "1" && isSupabaseDatabaseUrl(resolved)) {
-    // URL direta :5432 → Supavisor :6543 na Vercel (IPv6). Session pooler regional pode retornar "tenant not found".
-    runtimeUrl =
-      resolved.includes("db.") &&
-      !resolved.includes(".pooler.") &&
-      !resolved.includes(":6543")
-        ? toSupabaseVercelPoolerUrl(resolved)
-        : normalizeSupabaseUrl(resolved);
+    // Na Vercel, db.*:5432 costuma falhar (IPv6). Runtime usa pooler (DATABASE_URL).
+    // Direct fica só para CLI via DIRECT_DATABASE_URL / POSTGRES_URL_NON_POOLING.
+    const poolerForRuntime = withOptionalSupabasePassword(
+      pickFirstEnv(env, SUPABASE_VERCEL_DATABASE_KEYS) || resolved,
+      env
+    );
+
+    if (poolerForRuntime.includes(".pooler.")) {
+      runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
+    } else if (poolerForRuntime.includes("db.") && !poolerForRuntime.includes(":6543")) {
+      runtimeUrl = toSupabaseSessionPoolerUrl(poolerForRuntime);
+    } else {
+      runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
+    }
+
+    if (process.env.USE_DIRECT_DATABASE_ON_VERCEL === "1") {
+      const directForRuntime = withOptionalSupabasePassword(
+        pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS),
+        env
+      );
+      if (directForRuntime && isSupabaseDatabaseUrl(directForRuntime)) {
+        runtimeUrl = normalizeSupabaseUrl(directForRuntime);
+      }
+    }
   } else {
-    const directFromEnvEarly = env.DIRECT_DATABASE_URL?.trim();
+    const directFromEnvEarly = pickFirstEnv(env, [
+      "DIRECT_DATABASE_URL",
+      ...SUPABASE_INTEGRATION_DIRECT_KEYS,
+    ]);
     const preferDirectLocally = process.env.NODE_ENV !== "production";
 
     if (
@@ -178,7 +260,10 @@ export function resolvePrismaDatasourceUrls(
     }
   }
 
-  const directFromEnv = env.DIRECT_DATABASE_URL?.trim();
+  const directFromEnv = pickFirstEnv(env, [
+    "DIRECT_DATABASE_URL",
+    ...SUPABASE_INTEGRATION_DIRECT_KEYS,
+  ]);
   const directUrl =
     directFromEnv || deriveSupabaseDirectUrl(runtimeUrl) || undefined;
 

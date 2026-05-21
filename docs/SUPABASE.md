@@ -148,8 +148,8 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 2. No Supabase: **Project Settings → Database** → copie **Session pooler** (porta 5432) ou ative **IPv4** e use **Direct connection**.
 
 3. Se `/api/health/db` retornar **503** na Vercel:
-   - Erro `Can't reach database server at db....supabase.co` → ative **IPv4** no Supabase e use a URL **Direct** em `DATABASE_URL`.
-   - Erro `tenant/user postgres.REF not found` → confira a senha (`npm run supabase:configure`), use `SUPABASE_DB_PASSWORD` na Vercel, ou ative IPv4 + Direct.
+   - Erro `Can't reach database server at db....supabase.co` → ative **IPv4** no Supabase; depois defina `USE_DIRECT_DATABASE_ON_VERCEL=1` e `DIRECT_DATABASE_URL` (Direct).
+   - Erro `tenant/user postgres.REF not found` → na Vercel, use a URL **Transaction pooler** copiada do painel Supabase (Connect → ORMs → Prisma) em `POSTGRES_PRISMA_URL` ou `DATABASE_URL`, e `SUPABASE_DB_PASSWORD` com a senha em texto puro. Evite variáveis duplicadas da integração com prefixo errado (`NEXT_PUBLIC_SUPABASE_URL_POSTGRES_*` expostas ao browser) — prefira renomear no painel Vercel para `POSTGRES_PRISMA_URL` / `DATABASE_URL`.
    - Diagnóstico temporário: `HEALTH_DB_DEBUG=1` na Vercel (mostra `error` no JSON; remova depois).
 
 4. Redeploy:
