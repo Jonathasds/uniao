@@ -108,27 +108,21 @@ export function deriveSupabaseDirectUrl(poolerUrl: string): string | undefined {
   }
 }
 
-/** Chaves que a integração Supabase↔Vercel pode injetar (às vezes com prefixo incorreto). */
+/** URLs de banco apenas server-side (nunca `NEXT_PUBLIC_*` — expõem senha no browser). */
 const SUPABASE_INTEGRATION_DATABASE_KEYS = [
   "DATABASE_URL",
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
   "POSTGRES_URL_NON_POOLING",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
 
-/** Na Vercel: integração Supabase (pooler com senha) costuma ser a única URL estável. */
+/** Na Vercel: pooler/Prisma URL definidos no painel (sem prefixo público). */
 const SUPABASE_VERCEL_DATABASE_KEYS = [
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
   "DATABASE_URL",
   "DIRECT_DATABASE_URL",
   "POSTGRES_URL_NON_POOLING",
-  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
 
 const SUPABASE_INTEGRATION_DIRECT_KEYS = [
