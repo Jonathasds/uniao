@@ -14,6 +14,8 @@ type DataTableProps<T> = {
   data: T[];
   emptyMessage?: string;
   onRowClick?: (item: T) => void;
+  /** Classes do `<tr>` por registro (ex.: cor de fundo por status). */
+  getRowClassName?: (item: T) => string | undefined;
 };
 
 export function DataTable<T extends { id: string }>({
@@ -21,6 +23,7 @@ export function DataTable<T extends { id: string }>({
   data,
   emptyMessage = "Nenhum registro encontrado",
   onRowClick,
+  getRowClassName,
 }: DataTableProps<T>) {
   if (data.length === 0) {
     return (
@@ -55,7 +58,8 @@ export function DataTable<T extends { id: string }>({
                 key={item.id}
                 onClick={() => onRowClick?.(item)}
                 className={cn(
-                  "border-b border-slate-50 transition-colors hover:bg-slate-50/50",
+                  "border-b border-slate-50 transition-colors",
+                  getRowClassName?.(item) ?? "hover:bg-slate-50/50",
                   onRowClick && "cursor-pointer"
                 )}
               >

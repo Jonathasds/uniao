@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { formatCurrency, formatDate, toNumber } from "@/lib/utils";
 import { QUOTE_STATUS } from "@/lib/constants";
+import { getQuoteRowBackgroundClass } from "@/lib/table-row-styles";
 import { UserAttribution } from "@/components/shared/user-attribution";
 import { toast } from "sonner";
 import { prepareQuoteSaleAction } from "@/app/actions/quotes";
@@ -83,6 +84,7 @@ export function QuotesPage({
 
       <DataTable
         data={quotes}
+        getRowClassName={(q) => getQuoteRowBackgroundClass(q.status)}
         columns={[
           {
             key: "code",

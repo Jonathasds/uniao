@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Pagination } from "@/components/ui/pagination";
 import { formatCurrency, formatDate, toNumber } from "@/lib/utils";
 import { PAYMENT_METHODS, SALE_STATUS } from "@/lib/constants";
+import { getSaleRowBackgroundClass } from "@/lib/table-row-styles";
 import { UserAttribution } from "@/components/shared/user-attribution";
 import type { SaleWithRelations } from "@/types";
 
@@ -35,6 +36,7 @@ export function SalesPage({ sales, totalPages, currentPage }: SalesPageProps) {
 
       <DataTable
         data={sales}
+        getRowClassName={(s) => getSaleRowBackgroundClass(s.status)}
         columns={[
           {
             key: "code",
