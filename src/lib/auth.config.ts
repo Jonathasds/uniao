@@ -7,6 +7,7 @@ import type { UserRole } from "@prisma/client";
  * Não importa Prisma nem módulos Node.js nativos.
  */
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: "/login",
   },

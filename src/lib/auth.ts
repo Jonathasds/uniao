@@ -68,7 +68,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             role: user.role,
           };
         } catch (error) {
+          const code =
+            error &&
+            typeof error === "object" &&
+            "code" in error &&
+            typeof (error as { code: string }).code === "string"
+              ? (error as { code: string }).code
+              : "";
           console.error("[auth] Falha ao conectar ao banco:", error);
+          if (code === "P2021") {
+            console.error(
+              "[auth] Tabelas ausentes no banco da Vercel. Rode: npm run db:setup (com as mesmas URLs do deploy)."
+            );
+          }
           return null;
         }
       },

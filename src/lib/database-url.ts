@@ -119,13 +119,14 @@ const SUPABASE_INTEGRATION_DATABASE_KEYS = [
   "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
 
-/** Na Vercel, prioriza URLs geradas pela integração Supabase (formato correto do painel). */
+/** Na Vercel: integração Supabase (pooler com senha) costuma ser a única URL estável. */
 const SUPABASE_VERCEL_DATABASE_KEYS = [
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
   "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
   "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
   "DATABASE_URL",
+  "DIRECT_DATABASE_URL",
   "POSTGRES_URL_NON_POOLING",
   "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
