@@ -134,6 +134,29 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 
 ---
 
+## 6.1. Imagens (logo e avatar) — Supabase Storage
+
+Logos da empresa e fotos de perfil são gravados no **Supabase Storage** (não em `public/uploads`).
+
+1. No painel: **Project Settings → API** → copie a chave **`service_role`** (secret — **nunca** no front-end).
+2. No `.env` (somente servidor; a publishable `NEXT_PUBLIC_*` continua só para o SDK no browser):
+   ```env
+   SUPABASE_SERVICE_ROLE_KEY="sua-service-role-key"
+   SUPABASE_STORAGE_BUCKET="uploads"
+   ```
+   > **Por quê?** A `service_role` ignora RLS e só roda nas Server Actions. A publishable pode vazar no HTML/JS; usá-la para upload abriria o Storage a quem tiver a chave pública.
+3. Crie o bucket público (uma vez):
+   ```powershell
+   npm run supabase:storage:setup
+   ```
+   Ou manualmente: **Storage → New bucket** → nome `uploads` → marque **Public bucket**.
+
+4. Na **Vercel**, adicione `SUPABASE_SERVICE_ROLE_KEY` e `SUPABASE_STORAGE_BUCKET=uploads` (Production).
+
+Imagens antigas salvas como `/uploads/...` no disco local precisam ser reenviadas pelo app para aparecerem na nuvem.
+
+---
+
 ## 7. Conectar à Vercel (produção)
 
 **URL do app:** https://uniao-pied.vercel.app
@@ -142,6 +165,7 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
    - `DATABASE_URL` — **Session pooler** (copie o host do painel; este projeto: `aws-1-sa-east-1.pooler.supabase.com:5432`) ou **Direct** com **IPv4** ativado no Supabase
    - `SUPABASE_DB_PASSWORD` (opcional) — senha em texto puro; evita erro ao colar `%40` na URL
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET=uploads`
    - `AUTH_URL` = `https://uniao-pied.vercel.app`
    - `AUTH_SECRET`, `AUTH_TRUST_HOST=true`
 

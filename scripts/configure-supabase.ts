@@ -113,10 +113,23 @@ async function main() {
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
     "sb_publishable_X8IR_u6-IWhIgbMNnidAnQ_BHCRPwKR";
 
-  updateEnvFile(root, {
+  const serviceRoleKey = (() => {
+    const supabaseEnvPath = resolve(root, ".env.supabase");
+    if (existsSync(supabaseEnvPath)) {
+      const content = readFileSync(supabaseEnvPath, "utf-8");
+      const match = content.match(
+        /^\s*SUPABASE_SERVICE_ROLE_KEY\s*=\s*(.+)\s*$/m
+      );
+      if (match) return match[1].trim().replace(/^["']|["']$/g, "");
+    }
+    return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
+  })();
+
+  const envEntries: Record<string, string> = {
     NEXT_PUBLIC_SUPABASE_URL: `https://${PROJECT_REF}.supabase.co`,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
     SUPABASE_DB_PASSWORD: password,
+    SUPABASE_STORAGE_BUCKET: "uploads",
     DATABASE_URL: databaseUrl,
     DIRECT_DATABASE_URL: directUrl,
     AUTH_URL: process.env.AUTH_URL ?? "http://localhost:3000",
@@ -125,7 +138,13 @@ async function main() {
       process.env.AUTH_SECRET ??
       "h7e6CsoTpPv8PVVoXvg3Bdcepd/og9yUJziLnfw4kns=",
     NODE_ENV: "development",
-  });
+  };
+
+  if (serviceRoleKey) {
+    envEntries.SUPABASE_SERVICE_ROLE_KEY = serviceRoleKey;
+  }
+
+  updateEnvFile(root, envEntries);
 
   console.log("✓ .env atualizado (Supabase sa-east-1)");
   console.log(`  Projeto: ${PROJECT_REF}`);
