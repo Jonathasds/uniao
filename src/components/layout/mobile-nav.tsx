@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { X } from "lucide-react";
+import { signOut } from "next-auth/react";
+import { LogOut, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getNavItemsForRole } from "@/lib/permissions";
 import { CompanyBrand, type CompanyBrandData } from "@/components/layout/company-brand";
@@ -38,11 +40,12 @@ type MobileNavProps = {
 
 export function MobileNav({ open, onClose, company }: MobileNavProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
-  const role = (session?.user?.role ?? "SELLER") as UserRole;
-  const navItems = getNavItemsForRole(role);
+  const { data: session, status } = useSession();
 
-  if (!open) return null;
+  if (!open || status !== "authenticated" || !session?.user) return null;
+
+  const role = session.user.role as UserRole;
+  const navItems = getNavItemsForRole(role);
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden">
@@ -82,6 +85,17 @@ export function MobileNav({ open, onClose, company }: MobileNavProps) {
             );
           })}
         </nav>
+        <div className="border-t border-slate-100 p-4">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+            onClick={() => signOut({ callbackUrl: "/login" })}
+          >
+            <LogOut className="h-4 w-4" />
+            Sair da sessão
+          </Button>
+        </div>
       </aside>
     </div>
   );

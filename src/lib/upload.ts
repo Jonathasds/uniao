@@ -2,6 +2,21 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 
 const MAX_LOGO_SIZE_BYTES = 2 * 1024 * 1024;
+
+/**
+ * Diretório de upload no disco (local) ou erro claro na Vercel.
+ * @param subdir - Subpasta (`company` ou `users`).
+ * @returns Caminho absoluto da pasta.
+ */
+function resolveUploadDir(subdir: string): string {
+  if (process.env.VERCEL === "1") {
+    throw new Error(
+      "Upload de imagem na Vercel requer Supabase Storage (ainda não configurado). Salve sem alterar a logo ou faça upload pelo ambiente local."
+    );
+  }
+
+  return path.join(process.cwd(), "public", "uploads", subdir);
+}
 const ALLOWED_LOGO_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -33,7 +48,7 @@ export async function saveCompanyLogo(file: File): Promise<string> {
           : "gif";
 
   const fileName = `logo-${Date.now()}.${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "company");
+  const uploadDir = resolveUploadDir("company");
   const filePath = path.join(uploadDir, fileName);
 
   await mkdir(uploadDir, { recursive: true });
@@ -67,7 +82,7 @@ export async function saveUserAvatar(file: File, userId: string): Promise<string
           : "gif";
 
   const fileName = `avatar-${userId}-${Date.now()}.${extension}`;
-  const uploadDir = path.join(process.cwd(), "public", "uploads", "users");
+  const uploadDir = resolveUploadDir("users");
   const filePath = path.join(uploadDir, fileName);
 
   await mkdir(uploadDir, { recursive: true });

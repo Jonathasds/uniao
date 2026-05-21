@@ -1,6 +1,13 @@
-import { checkDatabaseConnectionDetailed } from "@/lib/create-prisma-client";
+import {
+  checkDatabaseConnectionDetailed,
+  createPrismaClient,
+} from "@/lib/create-prisma-client";
 import { getDatabaseOfflineShortMessage } from "@/lib/database-messages";
-import { isSupabaseConfigured } from "@/lib/database-url";
+import {
+  isSupabaseConfigured,
+  isVercelDeployment,
+  resolvePrismaDatasourceUrls,
+} from "@/lib/database-url";
 
 export async function GET() {
   const result = await checkDatabaseConnectionDetailed();
@@ -18,8 +25,31 @@ export async function GET() {
     );
   }
 
+  let counts: Record<string, number> | undefined;
+  try {
+    const prisma = createPrismaClient();
+    const [customers, products, users] = await Promise.all([
+      prisma.customer.count(),
+      prisma.product.count(),
+      prisma.user.count(),
+    ]);
+    counts = { customers, products, users };
+  } catch {
+    counts = undefined;
+  }
+
+  let dbHost = "";
+  try {
+    dbHost = new URL(resolvePrismaDatasourceUrls().runtimeUrl).hostname;
+  } catch {
+    dbHost = "unknown";
+  }
+
   return Response.json({
     ok: true,
     provider: isSupabaseConfigured() ? "supabase" : "local",
+    environment: isVercelDeployment() ? "vercel" : "local",
+    dbHost,
+    counts,
   });
 }

@@ -42,7 +42,7 @@ DATABASE_URL="postgresql://postgres:SUA_SENHA@db.gvxtzvcxjodpyvaxiqqn.supabase.c
 
 **Vercel (pooler):**
 ```env
-DATABASE_URL="postgresql://postgres.gvxtzvcxjodpyvaxiqqn:SUA_SENHA@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DATABASE_URL="postgresql://postgres.gvxtzvcxjodpyvaxiqqn:SUA_SENHA@aws-1-sa-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 ```
 
 > Se a senha tiver `@`, use `%40` no lugar (ex.: `@senha` → `%40senha`).
@@ -139,7 +139,7 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 **URL do app:** https://uniao-pied.vercel.app
 
 1. No [painel Vercel](https://vercel.com/jonathasds-projects/uniao/settings/environment-variables), confira:
-   - `DATABASE_URL` — **Session pooler** (`aws-0-sa-east-1.pooler.supabase.com:5432`) ou **Direct** com **IPv4** ativado no Supabase
+   - `DATABASE_URL` — **Session pooler** (copie o host do painel; este projeto: `aws-1-sa-east-1.pooler.supabase.com:5432`) ou **Direct** com **IPv4** ativado no Supabase
    - `SUPABASE_DB_PASSWORD` (opcional) — senha em texto puro; evita erro ao colar `%40` na URL
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
    - `AUTH_URL` = `https://uniao-pied.vercel.app`
@@ -207,6 +207,8 @@ URL atual do projeto: **https://uniao-pied.vercel.app**
 
 No painel Supabase → **Table Editor** você vê e edita dados sem Prisma Studio.
 
+> As tabelas do ERP têm o mesmo nome dos models Prisma (`Customer`, `Product`, `CompanySettings`, `User`, …), no schema **public**. Não confunda com a tabela demo `todos` do Supabase.
+
 Ou localmente:
 
 ```powershell
@@ -216,6 +218,12 @@ npm run db:studio
 ---
 
 ## Problemas comuns
+
+### Local não carrega / não grava (lista vazia, toast de sucesso sem dados)
+
+- **Causa:** `VERCEL=1` ou `NODE_ENV=production` ficaram no terminal após `vercel env run` ou `vercel env pull`.
+- **Solução:** feche o terminal e rode só `npm run dev` (o script remove `VERCEL` automaticamente). Confira: `npm run db:check` deve mostrar `Ambiente: local` e host `db....supabase.co`.
+- **Não use** `vercel env run -- npm run dev` para desenvolver.
 
 ### `Can't reach database server`
 

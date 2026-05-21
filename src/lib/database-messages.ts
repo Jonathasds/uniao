@@ -14,8 +14,8 @@ export function getDatabaseOfflineHelp(): {
       steps: [
         "Confira se o projeto está ativo em supabase.com/dashboard",
         "Local: npm run supabase:configure e npm run db:check",
-        "Vercel: ative IPv4 no Supabase e USE_DIRECT_DATABASE_ON_VERCEL=true — docs/VERCEL-RECUPERAR.md",
-        "Ou reconecte a integração Supabase no painel da Vercel",
+        "Vercel: reconecte a integração Supabase (POSTGRES_PRISMA_URL) — docs/VERCEL-RECUPERAR.md",
+        "Local: reinicie npm run dev após alterar .env; limpe variáveis POSTGRES_* do terminal",
       ],
     };
   }

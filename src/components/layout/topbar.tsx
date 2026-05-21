@@ -21,20 +21,21 @@ type TopbarProps = {
 };
 
 /**
+ * Encerra a sessão e redireciona para a tela de login.
+ * @returns void
+ */
+function handleSignOut() {
+  void signOut({ callbackUrl: "/login" });
+}
+
+/**
  * Barra superior do painel com busca, avatar do usuário e menu da conta.
  * @param props - Dados da empresa e foto de perfil do usuário logado.
  * @returns Cabeçalho fixo da aplicação.
  */
 export function Topbar({ company, userImage, userName }: TopbarProps) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const displayName =
-    userName?.trim() ||
-    session?.user?.name?.trim() ||
-    "Usuário";
-  const displayRole = session?.user?.role
-    ? USER_ROLES[session.user.role as UserRole]
-    : "Usuário";
+  const { data: session, status } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     userImage ?? null
@@ -45,6 +46,18 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
   useEffect(() => {
     setAvatarPreview(userImage ?? null);
   }, [userImage]);
+
+  if (status === "unauthenticated") {
+    return null;
+  }
+
+  const displayName =
+    userName?.trim() ||
+    session?.user?.name?.trim() ||
+    "Usuário";
+  const displayRole = session?.user?.role
+    ? USER_ROLES[session.user.role as UserRole]
+    : "Usuário";
 
   /**
    * Abre o seletor de arquivo para trocar a foto de perfil.
@@ -88,20 +101,25 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b border-slate-100 bg-white/80 px-4 backdrop-blur-md lg:px-8">
-        <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-slate-100 bg-white/80 px-3 backdrop-blur-md sm:gap-4 sm:px-4 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
+            className="shrink-0 lg:hidden"
             onClick={() => setMobileOpen(true)}
+            aria-label="Abrir menu"
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <div className="lg:hidden">
-            <CompanyBrand name={company.name} logo={company.logo} compact />
+          <div className="min-w-0 flex-1 lg:hidden">
+            <CompanyBrand
+              name={company.name}
+              logo={company.logo}
+              compact
+            />
           </div>
-          <div className="relative hidden sm:block lg:block">
+          <div className="relative hidden sm:block">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="search"
@@ -111,8 +129,25 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-9 shrink-0 border-red-200 px-2.5 text-red-600 hover:bg-red-50 hover:text-red-700 max-lg:inline-flex lg:hidden"
+            onClick={handleSignOut}
+            aria-label="Sair da sessão"
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            <span>Sair</span>
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative hidden shrink-0 lg:inline-flex"
+            aria-hidden
+          >
             <Bell className="h-5 w-5 text-slate-500" />
             <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
           </Button>
@@ -126,13 +161,13 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
           />
 
           <DropdownMenu.Root>
-            <div className="flex items-center gap-1 rounded-lg hover:bg-slate-50">
+            <div className="flex items-center gap-0.5 rounded-lg hover:bg-slate-50 sm:gap-1">
               <button
                 type="button"
                 onClick={handleAvatarClick}
                 disabled={pending}
                 title="Clique para alterar sua foto"
-                className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60"
+                className="group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60 sm:h-10 sm:w-10"
               >
                 {avatarPreview ? (
                   <Image
@@ -146,7 +181,7 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
                 ) : (
                   <User className="h-4 w-4 text-primary" />
                 )}
-                <span className="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/35">
+                <span className="absolute inset-0 hidden items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/35 sm:flex">
                   <Camera className="h-4 w-4 text-white opacity-0 transition group-hover:opacity-100" />
                 </span>
               </button>
@@ -154,9 +189,9 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
               <DropdownMenu.Trigger asChild>
                 <button
                   type="button"
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 outline-none"
+                  className="hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 outline-none sm:flex"
                 >
-                  <div className="hidden min-w-0 text-left sm:block">
+                  <div className="min-w-0 text-left">
                     <p className="truncate text-sm font-medium text-slate-900">
                       {displayName}
                     </p>
@@ -185,8 +220,8 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
                   Alterar foto
                 </DropdownMenu.Item>
                 <DropdownMenu.Item
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 outline-none hover:bg-red-50"
-                  onSelect={() => signOut({ callbackUrl: "/login" })}
+                  className="hidden cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 outline-none hover:bg-red-50 lg:flex"
+                  onSelect={handleSignOut}
                 >
                   <LogOut className="h-4 w-4" />
                   Sair

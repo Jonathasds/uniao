@@ -13,6 +13,8 @@ import { Boxes, Mail, Lock } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { getDatabaseOfflineHelp } from "@/lib/database-messages";
+import { AuthGate } from "@/components/auth/auth-gate";
+import { redirectAfterLogin } from "@/lib/auth-routes";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -54,12 +56,13 @@ export default function LoginPage() {
     }
 
     toast.success("Login realizado com sucesso!");
-    router.push("/");
     router.refresh();
+    redirectAfterLogin();
   };
 
   return (
-    <div className="flex min-h-screen">
+    <AuthGate redirectIfAuthenticated>
+    <div className="flex min-h-dvh min-h-screen">
       <div className="hidden flex-1 flex-col justify-between bg-primary p-12 text-white lg:flex">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
@@ -166,5 +169,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </AuthGate>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/ui/data-table";
@@ -32,6 +33,7 @@ export function StockPage({
   totalPages,
   currentPage,
 }: StockPageProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"IN" | "OUT" | "ADJUSTMENT">("IN");
   const [pending, startTransition] = useTransition();
@@ -50,6 +52,7 @@ export function StockPage({
       else {
         toast.success("Movimentação registrada!");
         setOpen(false);
+        router.refresh();
       }
     });
   };

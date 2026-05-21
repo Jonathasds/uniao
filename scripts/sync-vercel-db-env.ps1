@@ -1,5 +1,9 @@
-# Define URLs de banco server-side na Vercel a partir do .env local.
+# Define URLs DIRECT do .env local na Vercel (db.*:5432).
 # Uso: .\scripts\sync-vercel-db-env.ps1
+#
+# AVISO: na Vercel isso so funciona com IPv4 no Supabase.
+# Producao estavel (commit 2b5a2db): use integracao Supabase + POSTGRES_PRISMA_URL,
+# NAO este script, a menos que USE_DIRECT_DATABASE_ON_VERCEL + IPv4 estejam ativos.
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot

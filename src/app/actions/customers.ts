@@ -28,8 +28,18 @@ export async function createCustomerAction(formData: FormData) {
     await createCustomer(parsed.data);
     revalidatePath("/clientes");
     return { success: true };
-  } catch {
-    return { error: "Erro ao criar cliente. Verifique o CPF/CNPJ." };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Erro ao criar cliente";
+    if (message.includes("Unique constraint") || message.includes("document")) {
+      return { error: "CPF/CNPJ já cadastrado." };
+    }
+    return {
+      error:
+        process.env.NODE_ENV === "development"
+          ? message
+          : "Erro ao criar cliente. Verifique o CPF/CNPJ.",
+    };
   }
 }
 

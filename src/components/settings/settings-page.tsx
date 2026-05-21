@@ -90,7 +90,13 @@ export function SettingsPage({
     startTransition(async () => {
       const result = await updateCompanyAction(fd);
       if (result.error) toast.error(result.error);
-      else toast.success("Configurações salvas!");
+      else {
+        toast.success("Configurações salvas!");
+        if ("warning" in result && result.warning) {
+          toast.warning(result.warning);
+        }
+        router.refresh();
+      }
     });
   };
 
@@ -103,6 +109,7 @@ export function SettingsPage({
       else {
         toast.success("Usuário criado!");
         setShowUserForm(false);
+        router.refresh();
       }
     });
   };
@@ -198,6 +205,7 @@ export function SettingsPage({
       else {
         toast.success("Usuário atualizado!");
         setEditingUser(null);
+        router.refresh();
       }
     });
   };

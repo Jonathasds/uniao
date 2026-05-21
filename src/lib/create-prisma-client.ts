@@ -2,21 +2,22 @@ import dns from "node:dns";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Pool, type PoolConfig } from "pg";
-
-if (process.env.VERCEL === "1") {
-  dns.setDefaultResultOrder("ipv4first");
-}
 import {
   getPgPoolOptions,
   isSupabaseDatabaseUrl,
+  isVercelDeployment,
   resolvePostgresUrl,
   resolvePrismaDatasourceUrls,
 } from "@/lib/database-url";
 
+if (isVercelDeployment()) {
+  dns.setDefaultResultOrder("ipv4first");
+}
+
 /**
  * Incremente ao alterar o schema Prisma para invalidar o client em cache no dev.
  */
-const PRISMA_CLIENT_CACHE_VERSION = 19;
+const PRISMA_CLIENT_CACHE_VERSION = 23;
 
 type PrismaCache = {
   client: PrismaClient;

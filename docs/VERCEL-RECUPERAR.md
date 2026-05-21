@@ -2,6 +2,32 @@
 
 Use este guia quando o site abre mas o login ou o dashboard retornam erro de banco.
 
+## Configuração que funcionou (commit `2b5a2db`)
+
+Esta é a configuração de produção **antes** de remover variáveis ou forçar conexão direta na Vercel.
+
+| Item | O que fazer |
+|------|-------------|
+| **Código** | `database-url.ts` prioriza `POSTGRES_PRISMA_URL` / URLs da **integração**; na Vercel usa **pooler**; **não** sobrescreve senha se a URL já tiver uma |
+| **Integração** | Supabase ↔ Vercel conectada ao projeto `gvxtzvcxjodpyvaxiqqn` |
+| **Manter na Vercel** | `POSTGRES_PRISMA_URL`, `POSTGRES_URL_NON_POOLING`, `DATABASE_URL`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `AUTH_*` |
+| **Remover na Vercel** | `SUPABASE_DB_PASSWORD` (conflita com senha já na URL → *password authentication failed*) |
+| **Não usar em produção** | `USE_DIRECT_DATABASE_ON_VERCEL` + `db.*:5432` sem **IPv4** (→ *Can't reach database server*) |
+| **Limpeza opcional** | Só após integração ativa: `.\scripts\cleanup-vercel-env.ps1` remove duplicatas `NEXT_PUBLIC_*_POSTGRES_*` **inseguras** — o app passa a usar só `POSTGRES_PRISMA_URL` |
+
+```powershell
+# 1) Reconectar integração no painel Vercel (Integrations → Supabase)
+# 2) Remover senha conflitante
+npx vercel env rm SUPABASE_DB_PASSWORD production --yes
+npx vercel env rm SUPABASE_DB_PASSWORD preview --yes
+# 3) Deploy
+npx vercel --prod
+```
+
+Teste: https://uniao-pied.vercel.app/api/health/db → `{"ok":true}`
+
+---
+
 ## Sintoma
 
 - `/api/health/db` retorna `503`
@@ -10,9 +36,8 @@ Use este guia quando o site abre mas o login ou o dashboard retornam erro de ban
 
 ## Causa
 
-O projeto **gvxtzvcxjodpyvaxiqqn** só responde bem pela **conexão direta** (`db.*.supabase.co:5432`). O pooler regional (`aws-0-sa-east-1.pooler`) retorna *tenant not found*.
-
-Na Vercel, a conexão direta exige **IPv4** no Supabase **ou** a **integração Supabase** (que injeta a URL correta).
+- Variáveis duplicadas da integração (`NEXT_PUBLIC_SUPABASE_URL_POSTGRES_*`) ou `SUPABASE_DB_PASSWORD` sobrescrevendo a senha da URL.
+- Conexão **direta** `db.*:5432` na Vercel sem **IPv4** no Supabase.
 
 ---
 

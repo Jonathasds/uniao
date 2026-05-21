@@ -1,5 +1,4 @@
 import type { NextAuthConfig } from "next-auth";
-import { canAccessRoute, getDefaultRoute } from "@/lib/permissions";
 import type { UserRole } from "@prisma/client";
 
 /**
@@ -13,35 +12,12 @@ export const authConfig = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 60 * 60 * 8,
+    updateAge: 60 * 60,
   },
   callbacks: {
-    authorized({ auth, request }) {
-      const { nextUrl } = request;
-      const isLoggedIn = !!auth?.user;
-      const isAuthPage =
-        nextUrl.pathname.startsWith("/login") ||
-        nextUrl.pathname.startsWith("/recuperar-senha");
-
-      if (!isLoggedIn && !isAuthPage) {
-        return false;
-      }
-
-      if (isLoggedIn && isAuthPage) {
-        const role = auth.user.role as UserRole;
-        return Response.redirect(new URL(getDefaultRoute(role), nextUrl));
-      }
-
-      if (isLoggedIn && !isAuthPage) {
-        const role = auth.user.role as UserRole;
-        const pathname = nextUrl.pathname;
-
-        if (!canAccessRoute(role, pathname)) {
-          return Response.redirect(new URL(getDefaultRoute(role), nextUrl));
-        }
-      }
-
-      return true;
-    },
+    /** Regras de rota ficam em src/middleware.ts (redirect explícito para /login). */
+    authorized: () => true,
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id!;

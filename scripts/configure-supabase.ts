@@ -12,7 +12,7 @@ import { spawnSync } from "child_process";
 import * as readline from "readline";
 
 const PROJECT_REF = "gvxtzvcxjodpyvaxiqqn";
-const POOLER_HOST = "aws-0-sa-east-1.pooler.supabase.com";
+const POOLER_HOST = "aws-1-sa-east-1.pooler.supabase.com";
 /** Session pooler — recomendado para Prisma (evita erro de tenant no 6543). */
 const POOLER_PORT = 5432;
 const DIRECT_HOST = `db.${PROJECT_REF}.supabase.co`;
@@ -105,8 +105,9 @@ async function main() {
   }
 
   const root = process.cwd();
-  const databaseUrl = buildDatabaseUrl(password, "pooler");
+  // Local: direct :5432 (estável com Prisma). Pooler fica em comentário para Vercel.
   const directUrl = buildDatabaseUrl(password, "direct");
+  const databaseUrl = directUrl;
 
   const publishableKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
@@ -115,6 +116,7 @@ async function main() {
   updateEnvFile(root, {
     NEXT_PUBLIC_SUPABASE_URL: `https://${PROJECT_REF}.supabase.co`,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: publishableKey,
+    SUPABASE_DB_PASSWORD: password,
     DATABASE_URL: databaseUrl,
     DIRECT_DATABASE_URL: directUrl,
     AUTH_URL: process.env.AUTH_URL ?? "http://localhost:3000",

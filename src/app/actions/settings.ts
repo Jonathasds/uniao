@@ -23,9 +23,17 @@ export async function updateCompanyAction(formData: FormData) {
   try {
     const logoFile = formData.get("logoFile");
     let logo = ((formData.get("logo") as string) || "").trim() || undefined;
+    let warning: string | undefined;
 
     if (logoFile instanceof File && logoFile.size > 0) {
-      logo = await saveCompanyLogo(logoFile);
+      try {
+        logo = await saveCompanyLogo(logoFile);
+      } catch (uploadError) {
+        warning =
+          uploadError instanceof Error
+            ? uploadError.message
+            : "Não foi possível salvar a logo.";
+      }
     }
 
     await updateCompanySettings({
@@ -38,7 +46,7 @@ export async function updateCompanyAction(formData: FormData) {
     });
     revalidatePath("/configuracoes");
     revalidatePath("/", "layout");
-    return { success: true };
+    return { success: true, warning };
   } catch (error) {
     return {
       error:

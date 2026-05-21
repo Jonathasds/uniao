@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Search, Pencil, Trash2, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +38,7 @@ export function ProductsPage({
   totalPages,
   currentPage,
 }: ProductsPageProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<ProductWithCategory | null>(null);
   const [categoryFilter, setCategoryFilter] = useState("all");
@@ -72,6 +74,7 @@ export function ProductsPage({
 
       toast.success(editing ? "Produto atualizado!" : "Produto criado!");
       setOpen(false);
+      router.refresh();
     });
   };
 
@@ -80,7 +83,10 @@ export function ProductsPage({
     startTransition(async () => {
       const result = await deleteProductAction(id);
       if (result.error) toast.error(result.error);
-      else toast.success("Produto excluído!");
+      else {
+        toast.success("Produto excluído!");
+        router.refresh();
+      }
     });
   };
 

@@ -108,21 +108,26 @@ export function deriveSupabaseDirectUrl(poolerUrl: string): string | undefined {
   }
 }
 
-/** URLs de banco apenas server-side (nunca `NEXT_PUBLIC_*` — expõem senha no browser). */
+/** Chaves que a integração Supabase↔Vercel pode injetar (às vezes com prefixo incorreto). */
 const SUPABASE_INTEGRATION_DATABASE_KEYS = [
   "DATABASE_URL",
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
   "POSTGRES_URL_NON_POOLING",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
 
-/** Na Vercel: pooler/Prisma URL definidos no painel (sem prefixo público). */
+/** Na Vercel, prioriza URLs geradas pela integração Supabase (formato correto do painel). */
 const SUPABASE_VERCEL_DATABASE_KEYS = [
   "POSTGRES_PRISMA_URL",
   "POSTGRES_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_PRISMA_URL",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL",
   "DATABASE_URL",
-  "DIRECT_DATABASE_URL",
   "POSTGRES_URL_NON_POOLING",
+  "NEXT_PUBLIC_SUPABASE_URL_POSTGRES_URL_NON_POOLING",
 ] as const;
 
 const SUPABASE_INTEGRATION_DIRECT_KEYS = [
@@ -189,6 +194,17 @@ export function injectSupabasePassword(
 }
 
 /**
+ * Indica deploy real na Vercel (não basta VERCEL=1 vazado do CLI no terminal local).
+ * @param env - Variáveis de ambiente.
+ * @returns true em production/preview na Vercel.
+ */
+export function isVercelDeployment(
+  env: NodeJS.ProcessEnv = process.env
+): boolean {
+  return env.VERCEL === "1" && Boolean(env.VERCEL_ENV?.trim());
+}
+
+/**
  * Monta URLs para Prisma CLI e para runtime da aplicação.
  * @param env - Variáveis de ambiente (process.env).
  * @returns URLs normalizadas.
@@ -196,9 +212,16 @@ export function injectSupabasePassword(
 export function resolvePrismaDatasourceUrls(
   env: NodeJS.ProcessEnv = process.env
 ): PrismaDatasourceUrls {
-  let raw =
-    pickFirstEnv(env, SUPABASE_INTEGRATION_DATABASE_KEYS) ||
-    pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS);
+  const onVercel = isVercelDeployment(env);
+  const preferDirectLocally = !onVercel;
+
+  let raw = preferDirectLocally
+    ? pickFirstEnv(env, [
+        "DIRECT_DATABASE_URL",
+        ...SUPABASE_INTEGRATION_DIRECT_KEYS,
+      ]) || pickFirstEnv(env, SUPABASE_INTEGRATION_DATABASE_KEYS)
+    : pickFirstEnv(env, SUPABASE_INTEGRATION_DATABASE_KEYS) ||
+      pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS);
 
   raw = withOptionalSupabasePassword(raw, env);
 
@@ -213,7 +236,7 @@ export function resolvePrismaDatasourceUrls(
     ? normalizeSupabaseUrl(resolved)
     : resolved;
 
-  if (process.env.VERCEL === "1" && isSupabaseDatabaseUrl(resolved)) {
+  if (onVercel && isSupabaseDatabaseUrl(resolved)) {
     const directForRuntime = withOptionalSupabasePassword(
       pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS),
       env
@@ -223,28 +246,28 @@ export function resolvePrismaDatasourceUrls(
       env
     );
 
-    // Pooler regional (aws-0-*.pooler) retorna "tenant not found" neste projeto — não converter db.* → pooler.
-    if (process.env.USE_DIRECT_DATABASE_ON_VERCEL === "1" && directForRuntime) {
+    if (env.USE_DIRECT_DATABASE_ON_VERCEL === "1" && directForRuntime) {
       runtimeUrl = normalizeSupabaseUrl(directForRuntime);
     } else if (poolerForRuntime.includes(".pooler.")) {
+      // URL da integração Supabase↔Vercel — usar como veio do painel
       runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
+    } else if (poolerForRuntime.includes("db.")) {
+      // db.*:5432 não é alcançável na Vercel sem IPv4 — session pooler regional
+      runtimeUrl = normalizeSupabaseUrl(
+        toSupabaseSessionPoolerUrl(poolerForRuntime)
+      );
     } else {
       runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
     }
-  } else {
+  } else if (preferDirectLocally && isSupabaseDatabaseUrl(resolved)) {
     const directFromEnvEarly = pickFirstEnv(env, [
       "DIRECT_DATABASE_URL",
       ...SUPABASE_INTEGRATION_DIRECT_KEYS,
     ]);
-    const preferDirectLocally = process.env.NODE_ENV !== "production";
-
-    if (
-      preferDirectLocally &&
-      directFromEnvEarly &&
-      isSupabaseDatabaseUrl(directFromEnvEarly) &&
-      resolved.includes(".pooler.")
-    ) {
+    if (directFromEnvEarly) {
       runtimeUrl = normalizeSupabaseUrl(directFromEnvEarly);
+    } else if (!resolved.includes(".pooler.")) {
+      runtimeUrl = normalizeSupabaseUrl(resolved);
     }
   }
 
@@ -281,12 +304,19 @@ export function resolvePrismaDatasourceUrls(
  * @returns true quando DATABASE_URL aponta para Supabase.
  */
 export function isSupabaseConfigured(): boolean {
-  const url = process.env.DATABASE_URL ?? process.env.DIRECT_DATABASE_URL ?? "";
-  return isSupabaseDatabaseUrl(resolvePostgresUrl(url) ?? url);
+  try {
+    return isSupabaseDatabaseUrl(
+      resolvePrismaDatasourceUrls(process.env).runtimeUrl
+    );
+  } catch {
+    const url =
+      process.env.DATABASE_URL ?? process.env.DIRECT_DATABASE_URL ?? "";
+    return isSupabaseDatabaseUrl(resolvePostgresUrl(url) ?? url);
+  }
 }
 
-/** Host do session pooler Supabase (região sa-east-1 do projeto). */
-const SUPABASE_SESSION_POOLER_HOST = "aws-0-sa-east-1.pooler.supabase.com";
+/** Host do session pooler Supabase (região sa-east-1 — projeto gvxtzvcxjodpyvaxiqqn). */
+const SUPABASE_SESSION_POOLER_HOST = "aws-1-sa-east-1.pooler.supabase.com";
 
 /**
  * Converte URL direta Supabase em session pooler (porta 5432, compatível com Prisma na Vercel).
@@ -369,7 +399,7 @@ export function getPgPoolOptions(runtimeUrl: string): {
   max: number;
   ssl?: { rejectUnauthorized: boolean };
 } {
-  const isServerless = process.env.VERCEL === "1";
+  const isServerless = isVercelDeployment();
   const isSupabase = isSupabaseDatabaseUrl(runtimeUrl);
 
   return {

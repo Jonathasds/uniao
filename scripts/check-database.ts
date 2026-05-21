@@ -3,17 +3,30 @@
  * Uso: npm run db:check
  */
 import "dotenv/config";
-import { checkDatabaseConnection, createPrismaClient } from "../src/lib/create-prisma-client";
+import {
+  checkDatabaseConnection,
+  createPrismaClient,
+  resetPrismaConnection,
+} from "../src/lib/create-prisma-client";
 import {
   isSupabaseDatabaseUrl,
+  isVercelDeployment,
   resolvePrismaDatasourceUrls,
 } from "../src/lib/database-url";
 
 async function main() {
+  if (process.env.VERCEL === "1" && !isVercelDeployment(process.env)) {
+    console.warn(
+      "Aviso: VERCEL=1 no terminal (ex.: vercel env run). Isso quebra o dev local.\n" +
+        "       Feche o terminal ou rode: npm run dev (limpa VERCEL automaticamente).\n"
+    );
+  }
+
   const urls = resolvePrismaDatasourceUrls(process.env);
   const provider = isSupabaseDatabaseUrl(urls.runtimeUrl) ? "Supabase" : "PostgreSQL";
 
   console.log(`Provedor detectado: ${provider}`);
+  console.log(`Ambiente: ${isVercelDeployment(process.env) ? "Vercel" : "local"}`);
   console.log(`Runtime (app): ${maskUrl(urls.runtimeUrl)}`);
   if (urls.directUrl) {
     console.log(`Direct (Prisma CLI): ${maskUrl(urls.directUrl)}`);
@@ -34,7 +47,15 @@ async function main() {
   }
 
   await prisma.$disconnect();
+  await resetPrismaConnection();
 }
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    void resetPrismaConnection().finally(() => process.exit(1));
+  });
 
 /**
  * Oculta senha na URL para exibição no terminal.
@@ -51,7 +72,3 @@ function maskUrl(url: string): string {
   }
 }
 
-main().catch((error) => {
-  console.error(error instanceof Error ? error.message : error);
-  process.exit(1);
-});

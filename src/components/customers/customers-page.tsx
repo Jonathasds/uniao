@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export function CustomersPage({
   totalPages,
   currentPage,
 }: CustomersPageProps) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
   const [pending, startTransition] = useTransition();
@@ -46,6 +48,7 @@ export function CustomersPage({
       }
       toast.success(editing ? "Cliente atualizado!" : "Cliente criado!");
       setOpen(false);
+      router.refresh();
     });
   };
 
@@ -109,8 +112,13 @@ export function CustomersPage({
                   onClick={() => {
                     if (confirm("Excluir cliente?")) {
                       startTransition(async () => {
-                        await deleteCustomerAction(c.id);
+                        const result = await deleteCustomerAction(c.id);
+                        if (result.error) {
+                          toast.error(result.error);
+                          return;
+                        }
                         toast.success("Cliente excluído!");
+                        router.refresh();
                       });
                     }
                   }}
