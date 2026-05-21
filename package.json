@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:setup": "prisma db push && npm run db:seed",
     "db:check": "tsx scripts/check-database.ts",
+    "db:purge": "tsx scripts/purge-business-data.ts",
     "supabase:configure": "tsx scripts/configure-supabase.ts",
     "supabase:storage:setup": "tsx scripts/setup-supabase-storage-complete.ts",
     "db:seed": "tsx prisma/seed.ts",
