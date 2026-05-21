@@ -1,0 +1,23 @@
+import { getCustomers } from "@/services/customer.service";
+import { CustomersPage } from "@/components/customers/customers-page";
+
+type Props = {
+  searchParams: Promise<{ page?: string; search?: string }>;
+};
+
+export default async function ClientesPage({ searchParams }: Props) {
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const { data, totalPages } = await getCustomers({
+    page,
+    search: params.search,
+  });
+
+  return (
+    <CustomersPage
+      customers={data}
+      totalPages={totalPages}
+      currentPage={page}
+    />
+  );
+}
