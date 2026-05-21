@@ -173,23 +173,36 @@ async function queryWithTimeout(client: PrismaClient): Promise<void> {
   ]);
 }
 
-export async function checkDatabaseConnection(): Promise<boolean> {
+export type DatabaseConnectionResult =
+  | { ok: true }
+  | { ok: false; error?: string };
+
+/**
+ * Verifica conexão e opcionalmente retorna mensagem de erro (debug).
+ * @returns Resultado com ok e erro sanitizado.
+ */
+export async function checkDatabaseConnectionDetailed(): Promise<DatabaseConnectionResult> {
   await resetPrismaConnection();
 
-  try {
-    const client = createPrismaClient();
-    await queryWithTimeout(client);
-    return true;
-  } catch {
-    await resetPrismaConnection();
+  let lastError: string | undefined;
+
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const client = createPrismaClient();
       await queryWithTimeout(client);
-      return true;
-    } catch {
-      return false;
+      return { ok: true };
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+      await resetPrismaConnection();
     }
   }
+
+  return { ok: false, error: lastError };
+}
+
+export async function checkDatabaseConnection(): Promise<boolean> {
+  const result = await checkDatabaseConnectionDetailed();
+  return result.ok;
 }
 
 /**

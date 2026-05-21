@@ -136,17 +136,21 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 
 ## 7. Conectar à Vercel (produção)
 
-**URL do app:** https://uniao-theta.vercel.app
+**URL do app:** https://uniao-pied.vercel.app
 
 1. No [painel Vercel](https://vercel.com/jonathasds-projects/uniao/settings/environment-variables), confira:
-   - `DATABASE_URL` — use a string **Transaction pooler** do Supabase (porta **6543**), ou conexão direta com **IPv4** ativado no projeto Supabase
+   - `DATABASE_URL` — **Session pooler** (`aws-0-sa-east-1.pooler.supabase.com:5432`) ou **Direct** com **IPv4** ativado no Supabase
+   - `SUPABASE_DB_PASSWORD` (opcional) — senha em texto puro; evita erro ao colar `%40` na URL
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-   - `AUTH_URL` = `https://uniao-theta.vercel.app`
+   - `AUTH_URL` = `https://uniao-pied.vercel.app`
    - `AUTH_SECRET`, `AUTH_TRUST_HOST=true`
 
-2. No Supabase: **Project Settings → Database** → copie **Transaction pooler** (Connect → ORMs → Prisma).
+2. No Supabase: **Project Settings → Database** → copie **Session pooler** (porta 5432) ou ative **IPv4** e use **Direct connection**.
 
-3. Se `/api/health/db` retornar 503 na Vercel: em **Database Settings**, ative **IPv4** (add-on) *ou* cole a URL do pooler (não a direta `:5432`).
+3. Se `/api/health/db` retornar **503** na Vercel:
+   - Erro `Can't reach database server at db....supabase.co` → ative **IPv4** no Supabase e use a URL **Direct** em `DATABASE_URL`.
+   - Erro `tenant/user postgres.REF not found` → confira a senha (`npm run supabase:configure`), use `SUPABASE_DB_PASSWORD` na Vercel, ou ative IPv4 + Direct.
+   - Diagnóstico temporário: `HEALTH_DB_DEBUG=1` na Vercel (mostra `error` no JSON; remova depois).
 
 4. Redeploy:
    ```powershell
@@ -164,7 +168,8 @@ Abra [http://localhost:3000](http://localhost:3000) e entre com:
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Publishable key |
 | `DATABASE_URL` | Mesma string do pooler (6543) |
 | `AUTH_SECRET` | Mesmo do `.env` ou outro segredo |
-| `AUTH_URL` | `https://uniao-theta.vercel.app` (sua URL) |
+| `AUTH_URL` | `https://uniao-pied.vercel.app` (sua URL) |
+| `SUPABASE_DB_PASSWORD` | Senha do banco (opcional, ver §7) |
 | `AUTH_TRUST_HOST` | `true` |
 
 3. Rode **uma vez** o setup apontando para o Supabase (no PC):
@@ -180,7 +185,7 @@ npm run db:setup
 npx vercel --prod
 ```
 
-URL atual do projeto: **https://uniao-theta.vercel.app**
+URL atual do projeto: **https://uniao-pied.vercel.app**
 
 ---
 

@@ -109,6 +109,25 @@ export function deriveSupabaseDirectUrl(poolerUrl: string): string | undefined {
 }
 
 /**
+ * Substitui a senha na URL quando `SUPABASE_DB_PASSWORD` está definida (evita erro de encoding na Vercel).
+ * @param databaseUrl - URL com ou sem senha.
+ * @param password - Senha em texto puro.
+ * @returns URL com senha codificada.
+ */
+export function injectSupabasePassword(
+  databaseUrl: string,
+  password: string
+): string {
+  try {
+    const url = new URL(resolvePostgresUrl(databaseUrl) ?? databaseUrl);
+    url.password = encodeURIComponent(password);
+    return url.toString();
+  } catch {
+    return databaseUrl;
+  }
+}
+
+/**
  * Monta URLs para Prisma CLI e para runtime da aplicação.
  * @param env - Variáveis de ambiente (process.env).
  * @returns URLs normalizadas.
@@ -116,10 +135,15 @@ export function deriveSupabaseDirectUrl(poolerUrl: string): string | undefined {
 export function resolvePrismaDatasourceUrls(
   env: NodeJS.ProcessEnv = process.env
 ): PrismaDatasourceUrls {
-  const raw =
+  let raw =
     env.DATABASE_URL?.trim() ||
     env.DIRECT_DATABASE_URL?.trim() ||
     "";
+
+  const plainPassword = env.SUPABASE_DB_PASSWORD?.trim();
+  if (plainPassword && raw && isSupabaseDatabaseUrl(raw)) {
+    raw = injectSupabasePassword(raw, plainPassword);
+  }
 
   if (!raw) {
     throw new Error(
@@ -133,10 +157,12 @@ export function resolvePrismaDatasourceUrls(
     : resolved;
 
   if (process.env.VERCEL === "1" && isSupabaseDatabaseUrl(resolved)) {
-    // URL direta :5432 não funciona na Vercel (IPv6); session pooler :5432 é o padrão do projeto
+    // URL direta :5432 → Supavisor :6543 na Vercel (IPv6). Session pooler regional pode retornar "tenant not found".
     runtimeUrl =
-      resolved.includes("db.") && !resolved.includes(".pooler.")
-        ? toSupabaseSessionPoolerUrl(resolved)
+      resolved.includes("db.") &&
+      !resolved.includes(".pooler.") &&
+      !resolved.includes(":6543")
+        ? toSupabaseVercelPoolerUrl(resolved)
         : normalizeSupabaseUrl(resolved);
   } else {
     const directFromEnvEarly = env.DIRECT_DATABASE_URL?.trim();
