@@ -118,6 +118,8 @@ Resumo:
 3. Variáveis: `DATABASE_URL`, `AUTH_SECRET`, `AUTH_URL`, `AUTH_TRUST_HOST=true`
 4. O `vercel.json` já define `prisma generate` antes do build e região **gru1** (São Paulo)
 
+**Deploy parou de funcionar?** → **[docs/VERCEL-RECUPERAR.md](docs/VERCEL-RECUPERAR.md)**
+
 ## Dark mode
 
 O CSS já inclui variáveis preparadas para dark mode (classe `.dark`). A implementação do toggle pode ser adicionada nas configurações.

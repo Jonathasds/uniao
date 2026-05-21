@@ -214,29 +214,22 @@ export function resolvePrismaDatasourceUrls(
     : resolved;
 
   if (process.env.VERCEL === "1" && isSupabaseDatabaseUrl(resolved)) {
-    // Na Vercel, db.*:5432 costuma falhar (IPv6). Runtime usa pooler (DATABASE_URL).
-    // Direct fica só para CLI via DIRECT_DATABASE_URL / POSTGRES_URL_NON_POOLING.
+    const directForRuntime = withOptionalSupabasePassword(
+      pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS),
+      env
+    );
     const poolerForRuntime = withOptionalSupabasePassword(
       pickFirstEnv(env, SUPABASE_VERCEL_DATABASE_KEYS) || resolved,
       env
     );
 
-    if (poolerForRuntime.includes(".pooler.")) {
+    // Pooler regional (aws-0-*.pooler) retorna "tenant not found" neste projeto — não converter db.* → pooler.
+    if (process.env.USE_DIRECT_DATABASE_ON_VERCEL === "1" && directForRuntime) {
+      runtimeUrl = normalizeSupabaseUrl(directForRuntime);
+    } else if (poolerForRuntime.includes(".pooler.")) {
       runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
-    } else if (poolerForRuntime.includes("db.") && !poolerForRuntime.includes(":6543")) {
-      runtimeUrl = toSupabaseSessionPoolerUrl(poolerForRuntime);
     } else {
       runtimeUrl = normalizeSupabaseUrl(poolerForRuntime);
-    }
-
-    if (process.env.USE_DIRECT_DATABASE_ON_VERCEL === "1") {
-      const directForRuntime = withOptionalSupabasePassword(
-        pickFirstEnv(env, SUPABASE_INTEGRATION_DIRECT_KEYS),
-        env
-      );
-      if (directForRuntime && isSupabaseDatabaseUrl(directForRuntime)) {
-        runtimeUrl = normalizeSupabaseUrl(directForRuntime);
-      }
     }
   } else {
     const directFromEnvEarly = pickFirstEnv(env, [

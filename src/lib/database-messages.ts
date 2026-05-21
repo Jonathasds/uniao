@@ -13,10 +13,9 @@ export function getDatabaseOfflineHelp(): {
       title: "Não foi possível conectar ao Supabase",
       steps: [
         "Confira se o projeto está ativo em supabase.com/dashboard",
-        "Verifique DATABASE_URL no arquivo .env",
-        "No terminal: npm run db:check",
-        "Se falhar, rode: npm run supabase:configure -- --password=SUA_SENHA",
-        "Reinicie: npm run dev",
+        "Local: npm run supabase:configure e npm run db:check",
+        "Vercel: ative IPv4 no Supabase e USE_DIRECT_DATABASE_ON_VERCEL=true — docs/VERCEL-RECUPERAR.md",
+        "Ou reconecte a integração Supabase no painel da Vercel",
       ],
     };
   }
