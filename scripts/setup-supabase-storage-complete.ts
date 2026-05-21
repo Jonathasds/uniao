@@ -11,6 +11,10 @@ import { resolve } from "path";
 import { spawnSync } from "child_process";
 import { createPrismaClient, resetPrismaConnection } from "../src/lib/create-prisma-client";
 import { DEFAULT_STORAGE_BUCKET } from "../src/utils/supabase/storage";
+import {
+  isInvalidServiceRoleKey,
+  getServiceRoleKeyHelpMessage,
+} from "../src/utils/supabase/service-role-key";
 
 const PROJECT_REF = "gvxtzvcxjodpyvaxiqqn";
 const BUCKET = process.env.SUPABASE_STORAGE_BUCKET?.trim() || DEFAULT_STORAGE_BUCKET;
@@ -210,6 +214,11 @@ async function main() {
     SUPABASE_STORAGE_BUCKET: BUCKET,
     ...(serviceRole ? { SUPABASE_SERVICE_ROLE_KEY: serviceRole } : {}),
   });
+
+  if (serviceRole && isInvalidServiceRoleKey(serviceRole)) {
+    console.error(`✗ ${getServiceRoleKeyHelpMessage()}`);
+    process.exit(1);
+  }
 
   if (serviceRole) {
     console.log("✓ SUPABASE_SERVICE_ROLE_KEY gravada no .env e na Vercel");

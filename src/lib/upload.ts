@@ -1,4 +1,5 @@
 import { createAdminSupabaseClient } from "@/utils/supabase/admin";
+import { getServiceRoleKeyHelpMessage } from "@/utils/supabase/service-role-key";
 import { getStorageBucket } from "@/utils/supabase/storage";
 
 const MAX_IMAGE_SIZE_BYTES = 2 * 1024 * 1024;
@@ -69,9 +70,12 @@ async function uploadImageToSupabase(
   });
 
   if (error) {
+    const msg = error.message.toLowerCase();
+    if (msg.includes("compact jws") || msg.includes("invalid jwt")) {
+      throw new Error(getServiceRoleKeyHelpMessage());
+    }
     const hint =
-      error.message.toLowerCase().includes("bucket") ||
-      error.message.toLowerCase().includes("not found")
+      msg.includes("bucket") || msg.includes("not found")
         ? ` Crie o bucket público "${bucket}" no painel Supabase ou execute: npm run supabase:storage:setup`
         : "";
     throw new Error(`Falha ao enviar imagem ao Supabase Storage.${hint} (${error.message})`);
