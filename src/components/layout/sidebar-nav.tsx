@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   Package,
@@ -11,7 +12,9 @@ import {
   Warehouse,
   BarChart3,
   Settings,
+  LogOut,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CompanyBrand, type CompanyBrandData } from "@/components/layout/company-brand";
 import type { NAV_ITEMS } from "@/lib/constants";
@@ -76,7 +79,25 @@ export function SidebarNav({ company, navItems, onNavigate }: SidebarNavProps) {
         })}
       </nav>
 
-      <div className="shrink-0 border-t border-slate-100 p-4">
+      <div className="shrink-0 space-y-3 border-t border-slate-100 p-4 lg:hidden">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+          onClick={() => {
+            onNavigate?.();
+            void signOut({ callbackUrl: "/login" });
+          }}
+        >
+          <LogOut className="h-4 w-4" />
+          Sair da sessão
+        </Button>
+        <p className="truncate text-center text-xs text-slate-400">
+          v1.0.0 · {company.name}
+        </p>
+      </div>
+
+      <div className="hidden shrink-0 border-t border-slate-100 p-4 lg:block">
         <p className="truncate text-center text-xs text-slate-400">
           v1.0.0 · {company.name}
         </p>
