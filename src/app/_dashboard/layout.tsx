@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/layout/sidebar";
-import { Topbar } from "@/components/layout/topbar";
+import { AppShell } from "@/components/layout/app-shell";
 import { PresenceHeartbeat } from "@/components/presence/presence-heartbeat";
 import { AuthGate } from "@/components/auth/auth-gate";
 import { requireAuth } from "@/lib/require-auth";
@@ -33,15 +32,13 @@ export default async function DashboardLayout({
     <AuthGate>
       <div className="min-h-dvh min-h-screen bg-background">
         <PresenceHeartbeat />
-        <Sidebar company={brand} />
-        <div className="lg:pl-64">
-          <Topbar
-            company={brand}
-            userImage={currentUser?.image ?? null}
-            userName={currentUser?.name ?? null}
-          />
-          <main className="p-4 lg:p-8">{children}</main>
-        </div>
+        <AppShell
+          company={brand}
+          userImage={currentUser?.image ?? null}
+          userName={currentUser?.name ?? null}
+        >
+          {children}
+        </AppShell>
       </div>
     </AuthGate>
   );

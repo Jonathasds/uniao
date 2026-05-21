@@ -62,38 +62,29 @@ export default function LoginPage() {
 
   return (
     <AuthGate redirectIfAuthenticated>
-    <div className="flex min-h-dvh min-h-screen">
-      <div className="hidden flex-1 flex-col justify-between bg-primary p-12 text-white lg:flex">
+    <div className="flex min-h-dvh min-h-screen flex-col md:flex-row">
+      <div className="flex flex-1 flex-col justify-between bg-primary p-8 text-white sm:p-10 md:min-h-0 md:p-12">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
             <Boxes className="h-6 w-6" />
           </div>
           <span className="text-xl font-bold">União ERP</span>
         </div>
-        <div>
-          <h2 className="text-3xl font-bold leading-tight">
+        <div className="my-8 md:my-0">
+          <h2 className="text-2xl font-bold leading-tight sm:text-3xl">
             Gestão comercial
             <br />
             simples e moderna
           </h2>
-          <p className="mt-4 text-blue-100">
+          <p className="mt-4 text-sm text-blue-100 sm:text-base">
             Controle estoque, vendas, clientes e orçamentos em um só lugar.
           </p>
         </div>
         <p className="text-sm text-blue-200">© 2026 União ERP</p>
       </div>
 
-      <div className="flex flex-1 items-center justify-center bg-background p-8">
+      <div className="flex flex-1 items-center justify-center bg-background p-6 sm:p-8">
         <div className="w-full max-w-md">
-          <div className="mb-8 lg:hidden">
-            <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                <Boxes className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-lg font-bold">União ERP</span>
-            </div>
-          </div>
-
           <h1 className="text-2xl font-bold text-slate-900">Bem-vindo de volta</h1>
           <p className="mt-1 text-sm text-slate-500">
             Entre com suas credenciais para acessar o sistema
@@ -162,10 +153,6 @@ export default function LoginPage() {
               {loading ? "Entrando..." : "Entrar"}
             </Button>
           </form>
-
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Demo: jonathadelgado@gmail.com / ua042728
-          </p>
         </div>
       </div>
     </div>

@@ -7,17 +7,15 @@ import { signOut, useSession } from "next-auth/react";
 import { Bell, Camera, LogOut, Menu, Search, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
-import { MobileNav } from "./mobile-nav";
-import { CompanyBrand, type CompanyBrandData } from "@/components/layout/company-brand";
 import { USER_ROLES } from "@/lib/constants";
 import { updateUserAvatarAction } from "@/app/actions/profile";
 import { toast } from "sonner";
 import type { UserRole } from "@prisma/client";
 
 type TopbarProps = {
-  company: CompanyBrandData;
   userImage?: string | null;
   userName?: string | null;
+  onMenuClick?: () => void;
 };
 
 /**
@@ -29,14 +27,13 @@ function handleSignOut() {
 }
 
 /**
- * Barra superior do painel com busca, avatar do usuário e menu da conta.
- * @param props - Dados da empresa e foto de perfil do usuário logado.
+ * Barra superior do painel — layout único, adaptável a várias larguras de tela.
+ * @param props - Foto/nome do usuário e abertura do menu lateral em mobile/tablet.
  * @returns Cabeçalho fixo da aplicação.
  */
-export function Topbar({ company, userImage, userName }: TopbarProps) {
+export function Topbar({ userImage, userName, onMenuClick }: TopbarProps) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(
     userImage ?? null
   );
@@ -100,142 +97,109 @@ export function Topbar({ company, userImage, userName }: TopbarProps) {
   };
 
   return (
-    <>
-      <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-slate-100 bg-white/80 px-3 backdrop-blur-md sm:gap-4 sm:px-4 lg:px-8">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="shrink-0 lg:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="Abrir menu"
-          >
-            <Menu className="h-5 w-5" />
-          </Button>
-          <div className="min-w-0 flex-1 lg:hidden">
-            <CompanyBrand
-              name={company.name}
-              logo={company.logo}
-              compact
-            />
-          </div>
-          <div className="relative hidden sm:block">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-            <input
-              type="search"
-              placeholder="Buscar..."
-              className="h-9 w-64 rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-        </div>
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b border-slate-100 bg-white/80 px-3 backdrop-blur-md sm:gap-4 sm:px-4 lg:px-8">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="shrink-0 lg:hidden"
+        onClick={onMenuClick}
+        aria-label="Abrir menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
 
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 shrink-0 border-red-200 px-2.5 text-red-600 hover:bg-red-50 hover:text-red-700 max-lg:inline-flex lg:hidden"
-            onClick={handleSignOut}
-            aria-label="Sair da sessão"
-          >
-            <LogOut className="h-4 w-4 shrink-0" />
-            <span>Sair</span>
-          </Button>
+      <div className="relative min-w-0 flex-1">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input
+          type="search"
+          placeholder="Buscar..."
+          aria-label="Buscar"
+          className="h-9 w-full max-w-full rounded-lg border border-slate-200 bg-slate-50 pl-9 pr-4 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 sm:max-w-xs md:max-w-sm lg:max-w-md"
+        />
+      </div>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative hidden shrink-0 lg:inline-flex"
-            aria-hidden
-          >
-            <Bell className="h-5 w-5 text-slate-500" />
-            <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-          </Button>
+      <div className="flex shrink-0 items-center gap-1 sm:gap-2">
+        <Button variant="ghost" size="icon" className="relative shrink-0">
+          <Bell className="h-5 w-5 text-slate-500" />
+          <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+        </Button>
 
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp,image/gif"
-            className="hidden"
-            onChange={handleAvatarChange}
-          />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          className="hidden"
+          onChange={handleAvatarChange}
+        />
 
-          <DropdownMenu.Root>
-            <div className="flex items-center gap-0.5 rounded-lg hover:bg-slate-50 sm:gap-1">
+        <DropdownMenu.Root>
+          <div className="flex items-center gap-1 rounded-lg hover:bg-slate-50">
+            <button
+              type="button"
+              onClick={handleAvatarClick}
+              disabled={pending}
+              title="Clique para alterar sua foto"
+              className="group relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60"
+            >
+              {avatarPreview ? (
+                <Image
+                  src={avatarPreview}
+                  alt="Foto de perfil"
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                  unoptimized
+                />
+              ) : (
+                <User className="h-4 w-4 text-primary" />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/35">
+                <Camera className="h-4 w-4 text-white opacity-0 transition group-hover:opacity-100" />
+              </span>
+            </button>
+
+            <DropdownMenu.Trigger asChild>
               <button
                 type="button"
-                onClick={handleAvatarClick}
-                disabled={pending}
-                title="Clique para alterar sua foto"
-                className="group relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-slate-200 bg-primary/10 transition hover:border-primary/40 disabled:opacity-60 sm:h-10 sm:w-10"
+                className="hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 outline-none sm:flex"
               >
-                {avatarPreview ? (
-                  <Image
-                    src={avatarPreview}
-                    alt="Foto de perfil"
-                    width={40}
-                    height={40}
-                    className="h-full w-full object-cover"
-                    unoptimized
-                  />
-                ) : (
-                  <User className="h-4 w-4 text-primary" />
-                )}
-                <span className="absolute inset-0 hidden items-center justify-center bg-slate-900/0 transition group-hover:bg-slate-900/35 sm:flex">
-                  <Camera className="h-4 w-4 text-white opacity-0 transition group-hover:opacity-100" />
-                </span>
+                <div className="min-w-0 text-left">
+                  <p className="max-w-[8rem] truncate text-sm font-medium text-slate-900 sm:max-w-[10rem]">
+                    {displayName}
+                  </p>
+                  <p className="truncate text-xs text-slate-500">{displayRole}</p>
+                </div>
               </button>
+            </DropdownMenu.Trigger>
+          </div>
 
-              <DropdownMenu.Trigger asChild>
-                <button
-                  type="button"
-                  className="hidden min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 outline-none sm:flex"
-                >
-                  <div className="min-w-0 text-left">
-                    <p className="truncate text-sm font-medium text-slate-900">
-                      {displayName}
-                    </p>
-                    <p className="truncate text-xs text-slate-500">
-                      {displayRole}
-                    </p>
-                  </div>
-                </button>
-              </DropdownMenu.Trigger>
-            </div>
-
-            <DropdownMenu.Portal>
-              <DropdownMenu.Content
-                className="z-50 min-w-[180px] rounded-lg border border-slate-100 bg-white p-1 shadow-lg"
-                sideOffset={8}
-                align="end"
+          <DropdownMenu.Portal>
+            <DropdownMenu.Content
+              className="z-50 min-w-[180px] rounded-lg border border-slate-100 bg-white p-1 shadow-lg"
+              sideOffset={8}
+              align="end"
+            >
+              <DropdownMenu.Item
+                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-50"
+                onSelect={(event) => {
+                  event.preventDefault();
+                  handleAvatarClick();
+                }}
               >
-                <DropdownMenu.Item
-                  className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 outline-none hover:bg-slate-50"
-                  onSelect={(event) => {
-                    event.preventDefault();
-                    handleAvatarClick();
-                  }}
-                >
-                  <Camera className="h-4 w-4" />
-                  Alterar foto
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  className="hidden cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 outline-none hover:bg-red-50 lg:flex"
-                  onSelect={handleSignOut}
-                >
-                  <LogOut className="h-4 w-4" />
-                  Sair
-                </DropdownMenu.Item>
-              </DropdownMenu.Content>
-            </DropdownMenu.Portal>
-          </DropdownMenu.Root>
-        </div>
-      </header>
-      <MobileNav
-        open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
-        company={company}
-      />
-    </>
+                <Camera className="h-4 w-4" />
+                Alterar foto
+              </DropdownMenu.Item>
+              <DropdownMenu.Item
+                className="flex cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-sm text-red-600 outline-none hover:bg-red-50"
+                onSelect={handleSignOut}
+              >
+                <LogOut className="h-4 w-4" />
+                Sair
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Portal>
+        </DropdownMenu.Root>
+      </div>
+    </header>
   );
 }

@@ -217,7 +217,7 @@ export function SalesChart({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-3">
         <div className="rounded-lg bg-blue-50 px-3 py-2.5">
           <p className="text-xs font-medium text-blue-600 capitalize">
             {comparison.monthFull}
