@@ -6,8 +6,7 @@ import {
   getPgPoolOptions,
   isSupabaseDatabaseUrl,
   isVercelDeployment,
-  resolvePostgresUrl,
-  resolvePrismaDatasourceUrls,
+  requireSupabaseDatasourceUrls,
 } from "@/lib/database-url";
 
 if (isVercelDeployment()) {
@@ -17,7 +16,7 @@ if (isVercelDeployment()) {
 /**
  * Incremente ao alterar o schema Prisma para invalidar o client em cache no dev.
  */
-const PRISMA_CLIENT_CACHE_VERSION = 23;
+const PRISMA_CLIENT_CACHE_VERSION = 24;
 
 type PrismaCache = {
   client: PrismaClient;
@@ -29,7 +28,10 @@ const globalForPrisma = globalThis as unknown as {
   prismaCache: PrismaCache | undefined;
 };
 
-export { resolvePostgresUrl } from "@/lib/database-url";
+export {
+  requireSupabaseDatasourceUrls,
+  resolvePostgresUrl,
+} from "@/lib/database-url";
 
 /**
  * Monta config do pool `pg` com senha decodificada (evita erro de auth no pooler).
@@ -122,19 +124,7 @@ export function createPrismaClient(): PrismaClient {
     void cached.pool.end().catch(() => {});
   }
 
-  let runtimeUrl: string;
-  try {
-    runtimeUrl = resolvePrismaDatasourceUrls().runtimeUrl;
-  } catch {
-    const fallback = process.env.DATABASE_URL ?? "";
-    runtimeUrl = resolvePostgresUrl(fallback) ?? fallback;
-  }
-
-  if (!runtimeUrl.startsWith("postgres")) {
-    throw new Error(
-      "DATABASE_URL inválida. Configure o Supabase em .env (veja docs/SUPABASE.md)."
-    );
-  }
+  const { runtimeUrl } = requireSupabaseDatasourceUrls();
 
   const poolOptions = getPgPoolOptions(runtimeUrl);
   const pool = new Pool(buildPoolConfig(runtimeUrl, poolOptions));

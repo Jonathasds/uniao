@@ -1,5 +1,5 @@
 /**
- * Utilitários para connection strings PostgreSQL (Supabase, Prisma Dev, local).
+ * Utilitários de connection string — a aplicação usa apenas PostgreSQL do Supabase.
  */
 
 export type PrismaDatasourceUrls = {
@@ -205,6 +205,82 @@ export function isVercelDeployment(
 }
 
 /**
+ * Garante variáveis públicas do projeto Supabase (SDK).
+ * @param env - Variáveis de ambiente.
+ * @returns void
+ */
+export function assertSupabaseProjectEnv(
+  env: NodeJS.ProcessEnv = process.env
+): void {
+  const url = env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const key =
+    env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim() ??
+    env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+
+  if (!url || !key) {
+    throw new Error(
+      "Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY no .env (veja docs/SUPABASE.md)."
+    );
+  }
+
+  if (!isSupabaseDatabaseUrl(url)) {
+    throw new Error(
+      "NEXT_PUBLIC_SUPABASE_URL deve apontar para o seu projeto em supabase.co."
+    );
+  }
+}
+
+/**
+ * Rejeita URLs que não são do Supabase (Prisma Dev, localhost, etc.).
+ * @param databaseUrl - Connection string resolvida.
+ * @returns void
+ */
+export function assertSupabaseDatabaseUrl(databaseUrl: string): void {
+  if (!databaseUrl?.trim()) {
+    throw new Error(
+      "DATABASE_URL não definida. Configure o Supabase em .env (docs/SUPABASE.md)."
+    );
+  }
+
+  const resolved = resolvePostgresUrl(databaseUrl) ?? databaseUrl;
+
+  if (
+    databaseUrl.startsWith("prisma+postgres://") ||
+    databaseUrl.startsWith("prisma://")
+  ) {
+    throw new Error(
+      "Prisma Dev (prisma+postgres) não é usado neste app. Use DATABASE_URL do Supabase."
+    );
+  }
+
+  if (!isSupabaseDatabaseUrl(resolved)) {
+    let host = "desconhecido";
+    try {
+      host = new URL(resolved).hostname;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(
+      `Este app carrega dados apenas do Supabase. A URL atual aponta para "${host}". Use db.SEU_REF.supabase.co ou o pooler *.pooler.supabase.com.`
+    );
+  }
+}
+
+/**
+ * Monta URLs para Prisma CLI e runtime — somente Supabase.
+ * @param env - Variáveis de ambiente (process.env).
+ * @returns URLs normalizadas do Supabase.
+ */
+export function requireSupabaseDatasourceUrls(
+  env: NodeJS.ProcessEnv = process.env
+): PrismaDatasourceUrls {
+  assertSupabaseProjectEnv(env);
+  const urls = resolvePrismaDatasourceUrls(env);
+  assertSupabaseDatabaseUrl(urls.runtimeUrl);
+  return urls;
+}
+
+/**
  * Monta URLs para Prisma CLI e para runtime da aplicação.
  * @param env - Variáveis de ambiente (process.env).
  * @returns URLs normalizadas.
@@ -231,10 +307,10 @@ export function resolvePrismaDatasourceUrls(
     );
   }
 
+  assertSupabaseDatabaseUrl(raw);
+
   const resolved = resolvePostgresUrl(raw) ?? raw;
-  let runtimeUrl = isSupabaseDatabaseUrl(resolved)
-    ? normalizeSupabaseUrl(resolved)
-    : resolved;
+  let runtimeUrl = normalizeSupabaseUrl(resolved);
 
   if (onVercel && isSupabaseDatabaseUrl(resolved)) {
     const directForRuntime = withOptionalSupabasePassword(
@@ -300,18 +376,15 @@ export function resolvePrismaDatasourceUrls(
 }
 
 /**
- * Indica se o projeto está configurado para Supabase (não Prisma Dev local).
- * @returns true quando DATABASE_URL aponta para Supabase.
+ * Indica se DATABASE_URL e variáveis públicas apontam para Supabase.
+ * @returns true quando o app pode carregar dados do Supabase.
  */
 export function isSupabaseConfigured(): boolean {
   try {
-    return isSupabaseDatabaseUrl(
-      resolvePrismaDatasourceUrls(process.env).runtimeUrl
-    );
+    requireSupabaseDatasourceUrls(process.env);
+    return true;
   } catch {
-    const url =
-      process.env.DATABASE_URL ?? process.env.DIRECT_DATABASE_URL ?? "";
-    return isSupabaseDatabaseUrl(resolvePostgresUrl(url) ?? url);
+    return false;
   }
 }
 
